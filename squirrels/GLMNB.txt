@@ -1,0 +1,28 @@
+
+  model{
+    #1. Priors for regression coefficients
+    for (i in 1:K) { beta[i] ~ dnorm(0, 0.0001) } 
+    #Prior for size
+    size ~ dunif(0.001, 5)
+  
+    #2. Likelihood function
+    for (i in 1:N){  
+       SqCones[i]  ~ dnegbin(p[i], size)
+       p[i]       <- size / (size + mu[i])  
+       log(mu[i]) <- eta[i]
+       eta[i]     <- inprod(beta[], X[i,])
+                    
+       #Discrepancy measures (used for checking overdispersion)
+       YNew[i]   ~ dnegbin(p[i], size)   #New data
+       expY[i]    <- mu[i] 
+       varY[i]    <- mu[i] + pow(mu[i],2) / size
+       PRes[i]    <- (SqCones[i]  - expY[i]) / sqrt(varY[i])
+       PResNew[i] <- (YNew[i] - expY[i]) / sqrt(varY[i])
+       D[i]       <- pow(PRes[i], 2)
+       DNew[i]    <- pow(PResNew[i], 2)
+    }    
+    
+       Fit         <- sum(D[1:N])
+       FitNew      <- sum(DNew[1:N])
+  }
+

@@ -1,0 +1,21 @@
+
+    model{
+    #1A. Priors regression parameters count part and binary part
+    for (i in 1:Kc) { beta[i]  ~ dnorm(0, 0.0001) }  
+    for (i in 1:Kb) { gamma[i] ~ dnorm(0, 0.0001) }  
+    
+    ###################################
+    #2. Likelihood
+    for (i in 1:N) {
+    #Binary part. We need to work with 1 - Pi
+    W[i] ~ dbern(1 - Pi[i])
+    
+    #Count process
+    Y[i]       ~ dpois(W[i] * mu[i])
+    
+    #log-link and logistic link functions	
+    log(mu[i])   <- inprod(beta[], Xc[i,]) 
+    logit(Pi[i]) <- inprod(gamma[], Xb[i,])                                           
+    }     
+    }
+    

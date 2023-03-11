@@ -1,0 +1,31 @@
+ 
+    model{
+    #1. Priors beta
+    for (i in 1:K) { beta[i] ~ dnorm(0, 0.0001) }
+    
+    #2. Likelihood
+    for (i in 1:N) {
+    Y[i]        ~ dpois(mu[i])  
+    log(mu[i]) <- inprod(beta[], X[i,])  
+    }
+    
+    #3. Pearson residuals
+    for (i in 1:N){
+    ExpY[i] <- mu[i] 
+    VarY[i] <- mu[i]
+    E[i]   <- (Y[i]  - ExpY[i]) / sqrt(VarY[i])    
+    }
+    
+    #Simulated data with mean/variance taken from the fitted model 
+    for (i in 1:N){
+    YNew[i] ~  dpois(mu[i])                      
+    ENew[i] <- (YNew[i] - ExpY[i]) / sqrt(VarY[i]) 
+    D[i]    <- E[i]^2                      
+    DNew[i] <- ENew[i]^2   
+    }          
+    
+    #Sum of squared Pearson residuals:
+    Fit     <- sum(D[1:N])      
+    FitNew  <- sum(DNew[1:N])   
+    }           
+    

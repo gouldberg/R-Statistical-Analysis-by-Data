@@ -1,0 +1,13 @@
+
+  model{
+    #1. Priors for regression coefficients
+    for (i in 1:K) { beta[i] ~ dnorm(0, 0.0001) } 
+  
+    #2. Likelihood function
+    for (i in 1:N){  
+       SqCones[i] ~  dpois(mu[i])
+       log(mu[i]) <- eta[i]
+       eta[i]     <- inprod(beta[], X[i,]) 
+    }    
+  }
+

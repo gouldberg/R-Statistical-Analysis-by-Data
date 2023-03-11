@@ -1,0 +1,39 @@
+setwd("//media//kswada//MyFiles//R//long_jump")
+
+packages <- c("dplyr", "rstan")
+purrr::walk(packages, library, character.only = TRUE, warn.conflicts = FALSE)
+
+
+
+# ------------------------------------------------------------------------------
+# data:  long jump
+#  - male world record of running long jump by each from 1991 to 2015
+# ------------------------------------------------------------------------------
+
+N <- 25
+
+x <- c(8.95, 8.68, 8.70, 8.74, 8.71, 8.58, 8.63, 8.48, 8.60, 8.65,
+       8.41, 8.52, 8.53, 8.60, 8.60, 8.56, 8.66, 8.73, 8.74, 8.47,
+       8.54, 8.35, 8.56, 8.51, 8.52)
+
+
+data <- list(N = N, x = x)
+
+
+
+
+# ------------------------------------------------------------------------------
+# data exploration:  fit Gumbel distribution
+# ------------------------------------------------------------------------------
+
+library(gamlss)
+
+graphics.off()
+
+gamlss::histDist(x, density = TRUE, family = GU())
+
+
+
+# -->
+# Mu = 8.665
+# Sigma = exp(-1.963) = 0.1404

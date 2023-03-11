@@ -1,0 +1,5 @@
+gauge1_integrator	gauge1_planimeter	gauge2_integrator	gauge2_planimeter
+102.74	88.67	67.04	54.06
+88.67	142.74	86.56	80.03
+67.04	86.56	84.57	69.42
+54.06	80.03	69.42	99.06

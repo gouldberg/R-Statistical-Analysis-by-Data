@@ -1,0 +1,158 @@
+
+% ------------------------------------------------------------------------------
+% Generate simulation data
+% ------------------------------------------------------------------------------
+
+% ----------
+% A(q) * y(k) = B(q) * u(k) + C(q) +w(k)
+% set transfer function
+
+A = [1 -1.5 0.7]
+
+B = [0 1 0.5]
+
+
+% sampling cycle Ts = 0.25 seconds/cycle
+m0 = idpoly(A, B, [1 -1 0.2], 'Ts', 0.25)
+
+
+
+% ----------
+% generate input series and conver to iddata object
+
+u = idinput(350, 'rbs')
+
+u = iddata([], u, 0.25)
+
+
+
+% ----------
+% generate y by adding white noise
+
+y = sim(m0, u, 'noise')
+
+z = [y u]
+
+plot(z(1:100))
+
+
+
+% ------------------------------------------------------------------------------
+% Split data
+% ------------------------------------------------------------------------------
+
+ze = z(1:200)
+
+zv = z(201:350)
+
+
+
+% ------------------------------------------------------------------------------
+% Impulse Response Function and Frequency Response Function
+% ------------------------------------------------------------------------------
+
+% estimate Impulse Response Function
+
+irf = impulseest(ze)
+
+
+impulse(irf)
+
+
+
+% ----------
+% Frequency Response Function
+
+GS = spa(ze)
+
+
+bode(GS)
+
+
+
+% ------------------------------------------------------------------------------
+% Impulse Response Function and Frequency Response Function
+% ------------------------------------------------------------------------------
+
+# innovation model (state-space model) by prediction errors method (pem)
+
+m = pem(ze)
+
+
+bode(m)
+
+
+
+% ----------
+% 2nd order ARX by LS
+mx2 = arx(ze, [2 2 1])
+
+
+compare(zv, m, mx2)
+
+
+
+% ----------
+% Observation Error (OE) model
+
+mo2 = oe(ze, [2 2 1])
+
+
+resid(zv, mo2)
+
+
+resid(zv, mo2, 'fr')
+
+
+
+% ----------
+% ARMAX
+am2 = armax(ze, [2 2 2 1])
+
+
+% BJ
+bj2 = bj(ze, [2 2 2 2 1])
+
+
+
+% ------------------------------------------------------------------------------
+% comparison in time domain
+% ------------------------------------------------------------------------------
+
+compare(zv, am2, mo2, bj2, mx2, m)
+
+
+% 1-step ahead
+compare(zv, am2, mo2, bj2, mx2, m, 1)
+
+
+
+% ------------------------------------------------------------------------------
+% comparison in frequency domain
+% ------------------------------------------------------------------------------
+
+bode(GS, m, mx2, mo2, am2, bj2)
+
+legend('spa', 'PEM', 'arx', 'oe', 'armax', 'bj')
+
+
+bode(GS('noise'), m('n'), mx2('n'), am2('n'), bj2('n'))
+
+legend('spa', 'PEM', 'arx', 'armax', 'bj')
+
+
+
+% ----------
+bode(m0, am2)
+
+
+bode(m0('noise'), am2('noise'))
+
+
+
+% ------------------------------------------------------------------------------
+% ------------------------------------------------------------------------------
+
+zpplot(m0, am2, 'sd', 3)
+
+

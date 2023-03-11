@@ -1,0 +1,326 @@
+# setwd("//media//kswada//MyFiles//R//mpls")
+setwd("//media//kswada//MyFiles//R//Mixed_effects_and_multilevel_model//mpls")
+
+packages <- c("dplyr")
+purrr::walk(packages, library, character.only = TRUE, warn.conflicts = FALSE)
+
+
+# This examples are based on "Longitudinal Data Analaysis for the Behavioral Sciences Using R"
+
+
+# ------------------------------------------------------------------------------
+# data:  MPLS
+#   - Sample data from Minneapolis School District (MPLS)
+# ------------------------------------------------------------------------------
+
+MPLS.LS <- read.table("MPLS.LS.txt", header = T)
+
+
+str(MPLS.LS)
+
+
+dim(MPLS.LS)
+
+
+car::some(MPLS.LS)
+
+
+
+# ------------------------------------------------------------------------------
+# True model
+# ------------------------------------------------------------------------------
+
+
+mysample <- subset(MPLS.LS, grade == 5)
+
+
+# Fit True model
+model.0 <- lm(read ~ 1, mysample)
+
+
+
+# ------------------------------------------------------------------------------
+# Generate response from true model
+# add predictor from sample data
+# ------------------------------------------------------------------------------
+set.seed(1)
+
+
+( sim.dv <- unlist(simulate(model.0)) )
+
+length(sim.dv)
+
+
+sample.a <- data.frame(read = sim.dv, att = mysample$att)
+
+
+head(sample.a)
+
+
+plot(sample.a$att, sample.a$read)
+abline(h = 200, lty = 2, col = "darkgray")
+
+
+
+# ------------------------------------------------------------------------------
+# Fit false models  (overfitting model)
+# ------------------------------------------------------------------------------
+
+model.1a <- lm(sample.a$read ~ sample.a$att)
+
+model.2a <- lm(sample.a$read ~ sample.a$att + I(sample.a$att ^ 2))
+
+
+
+# ----------
+summary(model.1a)
+
+
+summary(model.2a)
+
+
+
+# ----------
+dev.a <- data.frame(deviance = c(deviance(model.1a), deviance(model.2a)))
+
+rownames(dev.a) <- c("Model.1a", "Model.2a")
+
+dev.a
+
+
+# -->
+# The output shows that Model 2(model.2a) has the smaller deviance, better fit.
+# Since the true regression is horisontal, the predictos att and att^2 are fitting random error, as there is nothing "real" to be fit
+# beyond the intercept term.
+
+
+
+# ------------------------------------------------------------------------------
+# Generate sample B and fit candidate model again
+# ------------------------------------------------------------------------------
+
+set.seed(13)
+
+sim.dv <- unlist(simulate(model.0))
+
+sample.b <- data.frame(read = sim.dv, att = mysample$att)
+
+
+plot(sample.b$att, sample.b$read)
+abline(h = 200, lty = 2, col = "darkgray")
+
+
+
+# ----------
+model.1b <- lm(sample.b$read ~ sample.b$att)
+
+model.2b <- lm(sample.b$read ~ sample.b$att + I(sample.b$att ^ 2))
+
+
+
+# ----------
+summary(model.1b)
+
+
+summary(model.2b)
+
+
+
+# ----------
+dev.b <- data.frame(deviance = c(deviance(model.1b), deviance(model.2b)))
+
+rownames(dev.b) <- c("Model.1b", "Model.2b")
+
+dev.b
+
+
+
+# -->
+# Once again, the deviance of Model2 is smaller.
+
+
+
+# ------------------------------------------------------------------------------
+# Generate sample C and fit candidate model again
+# ------------------------------------------------------------------------------
+
+set.seed(21)
+
+sim.dv <- unlist(simulate(model.0))
+
+sample.c <- data.frame(read = sim.dv, att = mysample$att)
+
+
+plot(sample.c$att, sample.c$read)
+abline(h = 200, lty = 2, col = "darkgray")
+
+
+
+# ----------
+model.1c <- lm(sample.c$read ~ sample.c$att)
+
+model.2c <- lm(sample.c$read ~ sample.c$att + I(sample.c$att ^ 2))
+
+
+
+# ----------
+summary(model.1c)
+
+
+summary(model.2c)
+
+
+
+# ----------
+dev.c <- data.frame(deviance = c(deviance(model.1c), deviance(model.2c)))
+
+rownames(dev.c) <- c("Model.1c", "Model.2c")
+
+dev.c
+
+
+
+# -->
+# Once again, the deviance of Model2 is smaller.
+
+
+
+# ------------------------------------------------------------------------------
+# Predictive deviance
+# ------------------------------------------------------------------------------
+
+# predictive deviance for sample B by model based on sample A
+N <- nrow(sample.b)
+prdev.1b <- N * (log(2 * pi * sum((sample.b$read - model.1a$fitted.values)^2)) + 1)
+prdev.2b <- N * (log(2 * pi * sum((sample.b$read - model.2a$fitted.values)^2)) + 1)
+prdev.b <- data.frame(preddev = c(prdev.1b, prdev.2b))
+rownames(prdev.b) <- c("Model 1", "Model 2")
+
+prdev.b
+
+
+
+# ----------
+# predictive deviance for sample C by model based on sample B
+N <- nrow(sample.c)
+prdev.1c <- N * (log(2 * pi * sum((sample.c$read - model.1b$fitted.values)^2)) + 1)
+prdev.2c <- N * (log(2 * pi * sum((sample.c$read - model.2b$fitted.values)^2)) + 1)
+prdev.c <- data.frame(preddev = c(prdev.1c, prdev.2c))
+rownames(prdev.c) <- c("Model 1", "Model 2")
+
+prdev.c
+
+
+
+
+# ------------------------------------------------------------------------------
+# Deviance, Predictive deviance, and AIC for sample data generated by sthe same underlying model
+# ------------------------------------------------------------------------------
+
+sampA_result <- c(unlist(dev.a), NA, NA, unlist(AIC(model.1a, model.2a)))
+
+sampB_result <- c(unlist(dev.b), unlist(prdev.b), unlist(AIC(model.1b, model.2b)))
+
+sampC_result <- c(unlist(dev.c), unlist(prdev.c), unlist(AIC(model.1c, model.2c)))
+
+
+output <- rbind(sampA_result, sampB_result, sampC_result)
+row.names(output) <- c("SampleA", "SampleB", "SampleC")
+colnames(output) <- c("dev.1", "dev.2", "pred.dev.1", "pred.dev.2", "df1", "df2", "AIC 1", "AIC 2")
+
+
+output
+
+
+# -->
+# Here the predictive deviance is smaller for Model 1 for both Sample B and Sample C
+# and AIC is too.
+
+
+# Given a large sample size, the normally assumption, and the endless repeated sampling scenario,
+# the AIC is an unbiased estimator of the average of the predictive deviance.
+
+
+
+# ------------------------------------------------------------------------------
+# Simulating many times
+# ------------------------------------------------------------------------------
+
+mysample <- subset(MPLS.LS, grade == 5)
+
+
+# Fit True model
+model.00 <- lm(read ~ 1, mysample)
+
+
+
+sim_n <- 10000
+
+output <- data.frame()
+
+for(i in 1:sim_n){
+
+  print(paste0("processing -- ", i))
+  
+  # generate samples
+  if(i == 1){
+    sim.dv <- unlist(simulate(model.00))
+    samp0 <- data.frame(read = sim.dv, att = mysample$att)
+  } else{
+    samp0 <- samp
+  }
+  
+  sim.dv <- unlist(simulate(model.00))
+  samp <- data.frame(read = sim.dv, att = mysample$att)
+  
+  
+  # fit by true model and false models
+  model.0 <- lm(samp$read ~ 1)
+  model.1 <- lm(samp$read ~ samp$att)
+  model.2 <- lm(samp$read ~ samp$att + I(samp$att ^ 2))
+  
+  
+  # deviance
+  dev <- data.frame(deviance = c(deviance(model.0), deviance(model.1), deviance(model.2)))
+  
+  
+  # predictive deviance for sample 0 by model based on current sample
+  N <- nrow(samp0)
+  prdev.0 <- N * (log(2 * pi * sum((samp0$read - model.0$fitted.values)^2)) + 1)
+  prdev.1 <- N * (log(2 * pi * sum((samp0$read - model.1$fitted.values)^2)) + 1)
+  prdev.2 <- N * (log(2 * pi * sum((samp0$read - model.2$fitted.values)^2)) + 1)
+  prdev <- data.frame(preddev = c(prdev.0, prdev.1, prdev.2))
+  
+  
+  samp_result <- bind_rows(c(unlist(dev), unlist(prdev), unlist(AIC(model.0, model.1, model.2))))
+  
+  output <- bind_rows(output, samp_result)
+  
+}
+
+
+# ----------
+colnames(output) <- c("dev.0", "dev.1", "dev.2", "pred.dev.0", "pred.dev.1", "pred.dev.2", "df0", "df1", "df2", "AIC 0", "AIC 1", "AIC 2")
+
+
+head(output)
+
+
+
+# ----------
+tmp <- tidyr::gather(output[, c("pred.dev.0", "pred.dev.1", "pred.dev.2")])
+
+
+# ----------
+lattice::histogram(~ value | key, data = tmp)
+
+
+par(mfrow = c(1,1))
+car::densityPlot(value ~ as.factor(key), data = tmp)
+
+car::Boxplot(value ~ as.factor(key), data = tmp)
+
+
+# -->
+# pre.dev.0 is smallest in average, second pre.dev.1
+

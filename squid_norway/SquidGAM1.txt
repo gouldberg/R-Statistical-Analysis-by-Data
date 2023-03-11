@@ -1,0 +1,21 @@
+
+    model{
+    #1A. Priors regression parameters
+    for (i in 1:M) { beta[i] ~ dnorm(0,0.0001) }
+    
+    #1B. Prior for variance for epsilon
+    num   ~ dnorm(0, 0.0016) 
+    denom ~ dnorm(0, 1)
+    sigma <- abs(num / denom) 
+    tau   <- 1 / (sigma * sigma)
+    
+    #2. Likelihood
+    for (i in 1:N) {
+    Y[i]  ~ dnorm(mu[i], tau)
+    mu[i] <- inprod(X[i,], beta[])
+    
+    #3. Discrepancy measures   
+    E[i] <- Y[i] - mu[i]
+    }     
+    }
+    

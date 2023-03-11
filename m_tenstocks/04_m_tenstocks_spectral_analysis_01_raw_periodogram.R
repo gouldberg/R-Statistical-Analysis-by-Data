@@ -1,0 +1,73 @@
+# setwd("//media//kswada//MyFiles//R//email")
+setwd("C:\\Users\\kswad\\OneDrive\\デスクトップ\\技術力強化_統計解析\\51_解析スクリプト\\m_tenstocks")
+
+
+packages <- c("dplyr", "tidyverse")
+purrr::walk(packages, library, character.only = TRUE, warn.conflicts = FALSE)
+
+
+
+# ------------------------------------------------------------------------------
+# data:  m-tenstocks
+# ------------------------------------------------------------------------------
+
+mtenstocks <- read.csv("m-tenstocks.txt", sep = " ", header = T)
+
+
+str(mtenstocks)
+
+
+dim(mtenstocks)
+
+
+car::some(mtenstocks)
+
+
+
+# ----------
+# log returns
+
+rtn <- log(mtenstocks[,2:11] + 1)
+
+
+
+# ------------------------------------------------------------------------------
+# Spectral analysis:  Raw periodogram
+#   - It is often convenient to calculate the DFTs(periodogram) using the fast Fourier transformation algorithm (FFT)
+#     FFT utilizes a number of redendancies in the calculation of the DFT when n is highly composite, that is, an integer with many factors of 2,3,5,...,
+#     the best case being when n = 2^p
+#     To accomodate this property, we can pad the centered (or detrended) data of length n to the next highly composite integer by adding zeros.
+#     SOI data has 453 observartions, and 480 months will be used in the spectral analyses by default
+# ------------------------------------------------------------------------------
+
+
+nextn(nrow(mtenstocks))
+
+nextn(nrow(rtn))
+
+
+
+# -->
+# actually data is only 132 points
+# now the data is padded and recognized as a series of length 135
+
+
+
+
+# ----------
+graphics.off()
+
+par(mfrow=c(2,3))
+
+# for(i in 2:11){ astsa::mvspec(mtenstocks[,i], log = "no", main = paste0(colnames(mtenstocks)[i])) }
+
+for(i in 1:10){ astsa::mvspec(rtn[,i], log = "no", main = paste0(colnames(rtn)[i])) }
+
+
+# -->
+# frequency bandwidth = 0.00741:  1 unit along frequency axis has 1 / 0.00741 = 135 points
+# the data is 1 month in 1 cycle --> fequency axis is labeled in multiples of 1
+# frequency axis "1" is 135 points,  "0.1" is 13.5 month cycle
+
+
+

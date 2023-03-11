@@ -1,0 +1,136 @@
+setwd("C:\\Users\\kswad\\OneDrive\\デスクトップ\\技術力強化_統計解析\\51_解析スクリプト\\infant_monitoring")
+
+packages <- c("dplyr", "astsa", "tseries", "forecast", "MTS")
+purrr::walk(packages, library, character.only = TRUE, warn.conflicts = FALSE)
+
+
+
+# ------------------------------------------------------------------------------
+# data:  Infant Monitoring
+#   - Variable:
+#       - Blood oxygen saturation, Pulse rate, and Respiration Rate
+# ------------------------------------------------------------------------------
+
+
+infm <- read.table("InfantMon.txt", sep = "", header = F, colClasses = "numeric")
+
+
+
+colnames(gas) <- c("MetI", "gasSendout", "V3")
+
+
+head(infm)
+
+
+
+
+# ----------
+colnames(infm) <- c("V1", "bos", "pulr", "respr")
+
+
+
+# smoothing by smoooth.spline
+# bos_sm <- smooth.spline(time(infm$bos), infm$bos, spar = 0.1)$y
+
+# respr_sm <- smooth.spline(time(infm$respr), infm$respr, spar = 0.1)$y
+
+
+# sub-sampling by 10 seconds
+bos_sm <- infm$bos[seq(0, 30000, by = 10)]
+
+# arcsine transformation
+bos_sm <- asin(sign(bos_sm) * sqrt(abs(bos_sm) / max(abs(bos_sm))))
+
+bos_sm <- bos_sm - mean(bos_sm)
+
+respr_sm <- infm$respr[seq(0, 30000, by = 10)]
+
+respr_sm <- respr_sm - mean(respr_sm)
+
+
+
+
+# ------------------------------------------------------------------------------
+# Regression with lagged variables:  impulse response function
+# ------------------------------------------------------------------------------
+
+
+# L:  degree of smoothing
+# M:  must be even, number of terms used in the lagged regression, abs(t) >= M/2
+# threshold:  the cut-off used to set small (in absolute value) regression coefficients equal to zero
+
+
+mod_itoo <- astsa::LagReg(input = bos_sm, output = respr_sm, L = 41, M = 100, threshold = 0.01)
+
+
+
+
+
+# ------------------------------------------------------------------------------
+# Regression with lagged variables:  impulse response function for inverse relationship
+# ------------------------------------------------------------------------------
+
+
+mod_otoi <- astsa::LagReg(input = respr_sm, output = bos_sm, L = 41, M = 100, inverse = TRUE,  threshold = 0.001)
+
+
+
+
+# ------------------------------------------------------------------------------
+# prewhitening
+# ------------------------------------------------------------------------------
+
+
+acf2(bos_sm)
+
+acf2(respr_sm)
+
+
+ar <- arima(bos_sm, order = c(2,0,0), include.mean = FALSE)
+
+summary(ar)
+
+
+( ar1 <- coef(ar)[1] )
+
+( ar2 <- coef(ar)[2] )
+
+
+# ----------
+bos.pw <- resid(ar)
+
+
+
+
+# ------------------------------------------------------------------------------
+# transform output
+# ------------------------------------------------------------------------------
+
+respr.fil <- stats::filter(respr_sm, filter = c(1, -ar1, -ar2), sides = 1)
+
+
+
+# ----------
+par(mfcol = c(2,2))
+
+plot(bos_sm, type = "l")
+plot(bos.pw, type = "l")
+
+plot(respr_sm, type = "l")
+plot(respr.fil, type = "l")
+
+
+
+# ------------------------------------------------------------------------------
+# Again, Regression with lagged variables:  impulse response function
+# ------------------------------------------------------------------------------
+
+
+mod_itoo <- astsa::LagReg(input = bos.pw[3:3000], output = respr.fil[3:3000], L = 3, M = 200, threshold = 0.0001)
+
+
+
+# -->
+# not good fit ...
+
+

@@ -1,0 +1,609 @@
+h
+# ------------------------------------------------------------------------------
+# Fourfold display for 2 * 2 tables
+# fourfold()
+# ------------------------------------------------------------------------------
+
+- The fourfold display is a special case of a radial diagram (or "polar area chart") designed for the display of 2 * 2 (or 2 * 2 * k) tables.
+- It differs from a pie chart in that it keeps the angles of the segments constant and varies the radius, where as the pie chart varies the angles and keeps the radius constant.
+- The main purpose of this display is to depict the sample odds ratio.
+- Confidence rings for the observed odds ratio allow a visual test of the hypothesis of independence, H0: odds ratio = 1.
+- It has the property that (in a standardized display) the rings for adjacent quadrants overlap iff the observed counts are consistent with the null hypothesis.
+  Each quarter circle is then drawn to have an area proportional to standardized cell frequency (both table margins are equal, while preserving the odds ratio)
+- An association between the variables (odds ratio <> 1) is shown by the tendency of diagonaly opposite cells in one direction to differ in size from those in the opposite direction, and the display uses color or shading to show this direction.
+
+
+# ------------------------------------------------------------------------------
+# Testing for the significance of the coefficients (likelihood based test)
+# Univariable Logistic Regression
+# ------------------------------------------------------------------------------
+
+- QUESTION: Does the model that includes the variable in question tell us more about the outcome (or response) variable than a model that does not include that variable ?
+- NOTE: not considering the question of whether the predicted values are an accurate representation of the observed values in an absolute sense (goodness of fit), but in a relative sense.
+
+- D (Deviance: residual deviance statistic)
+  - Deviance is twice the difference between the maximum posssible log-likelihood for the saturated model that fits perfectly and maximized log-likelihood for the fitted model.
+    = -2 * log( likelihood of the fitted model / likelihood of the saturated model ) = - 2 * log( likelihood of the fitted model )   (NOTE:  likelihood of the saturated model = 1.0 )
+  - It plays the same role that the residual sum-of-squares plays in linear regression.  (in linear regression, deviance is identically equal to SSE)
+  - Dobson(2002) calls this "the pseudo R^2"
+
+
+- G statistic
+  - G statistic = D(model without the variable) - D(model with the variable) = -2 * log( likelihood without the variable / likelihood with the variable )
+  - Under H0: beta1 = 0,  the statistic G follows a chi-square distribution with 1 df.
+  - It plays the same role in logistic regression that the numerator of the partial F-test does inlinear regression
+  - When the variable is not in the model,
+     - the maximum likelihood estimate of beta0 = log(n1 / n0) 
+     - the predicted probability for all subjects = n1 / n (constant)
+       n1 = subject counts of positive class,  n0 = subject counts of negative class
+
+
+# ------------------------------------------------------------------------------
+# Testing for the significance of the coefficients
+# ------------------------------------------------------------------------------
+
+- Wald test
+ - The Wald statistic is used to test H0: beta = 0 vs. H1: beta <> 0. 
+   If the null hypothesis is true, Wald statistic has an approximate standard normal distribution for a large sample.
+ - If more than one parameter is tested for equality to 0 in the null hypothesis, stated type I error rate for a hypothesis test (alpha) is not the same as the acutal type I error.
+ - The Likelihood Ratio Test (LRT) typically performs better than the Wald test.
+
+
+- Likelihood Ratio Test (LRT)
+ - If q regression parameters are set to 0 in the null huypothesis and if the null hypothesis is true, the -2 * log(LRT statistic) has an approximate Chi^2(q) distribution for a large sample.
+
+ - stats::anova(, test = "Chisq")
+   - type 1 (sequential) tests:  the null-hypothesis model contains only those variables listed in the formula argument before the tested term.
+     Performs LRTs in a sequential manner based on the ordering of the explanatory variables in the model fit.
+   - Sequential test means that the p-values will change if you change the order of the main terms or the order of the two-way interactions.
+   - This test is useful for tesiting the significance of the highest interaction term, but not for the other terms in the model.
+   - This test is of less use if only have main terms as the order of the variables is of importance in sequntial testing.
+
+ - car::Anova(, test = "LR")
+   - type 2 (partial) tests:  each null-hypothesis model consists of all the interactions that contain the term.
+   - assess the additional contribution of each terma above all others, taking marginally into account.
+   - Generally, type 2 tests are preferred unless there is some specific reason to consider a sequence of tests, such as in polynomial models.
+
+
+# ------------------------------------------------------------------------------
+# Confidence intervals of regression parameters
+# ------------------------------------------------------------------------------
+
+- confint.default():  Wald confidence interval
+
+   - The Wald confidence interval generally has a true confidence level close to the stated confidence interval only when there are large samples.
+
+- confint():  profile LR interval
+
+   - When the samples size is not large, profile LR confidence intervals generally perform better.
+
+
+# ------------------------------------------------------------------------------
+# Confidence intervals of probability of success
+# ------------------------------------------------------------------------------
+
+- 
+
+
+# ------------------------------------------------------------------------------
+# Description of Fitted Model
+# ------------------------------------------------------------------------------
+
+- Central Tendency of prediction errors
+  - Breir score = sum(P-hat - Y)^2 / n
+    - the quadratic proper scoring rule that combines calibration adn discrimination.
+    - The cross-validated error rate corrects the apparent error rate only if the predicted probability is exactly 1/2 or is 1/2 +- 1/(2n)
+      Breir score does not have this problem and have the nice property of being maximized when the predicted probabilities are the population probabilities.
+
+
+- Discrimination Measures (Rank correlation measures between Y-hat and Y)
+  - In general, rank-based indexes have advantage of being insensitive to the prevalence of positive responses.
+  - Not only for rank correlation between Y-hat and Y, Kendall's tau and Somer's d is useful for measures of contingency table's ordinal association
+    for 2 * columns tables with an ordinal response variables, Somers' d is a useful asymmetric measure.
+    
+  C: total number of concordant pairs   D: total number of discordant pairs 
+  (a pair of observations is concordant if the subject raniking higher on X also ranks higher on Y)
+  Tx: number of pairs tied on the variable X    Ty: number of pairs tied on the variable Y
+
+  - Kendall's tau
+    = (C - D) / (n * (n - 1)/2) = (C - D) / (C + D) = Continuous variables version of Goodman and Kruskal's gamma and Kendall's tau-b
+    - correlation coefficient for sign scores
+
+  - Somers' d
+    = (C - D) / (n * (n - 1)/2 - Tx)
+    - Treats Y as a response variable and X as an explanatory variable.
+    - When Y is binary, d = 2 * (c - 0.5) where c is the concordance probability or AUC
+       = the difference between concordance and discordance probabilities
+       0:  model is making random predictions   1: predictions are perfectly discriminating
+
+
+Discrimination measures based on variation in Y-hat
+  -- g-Index:  the mean over all possible i <> j of |Zi - Zj, which is based on Gini's mean difference for a variable Z
+               interpretable, robust, and highly efficient measure of variation.
+  -- gp:       probability version of g-Index, Gini's mean difference of P-hat.
+               represent e.g. "typical" odds ratios, and "typical" risk differences.
+
+gp:  Gini's mean difference of P (in logistic regression)
+
+
+# ------------------------------------------------------------------------------
+# Confidence intervals of probability of success
+# ------------------------------------------------------------------------------
+
+
+
+
+# ------------------------------------------------------------------------------
+# Clustering of explanatory variables
+# ------------------------------------------------------------------------------
+
+- Hoeffding's D
+  - Measure of the distance between F(x,y) and G(x)H(y), where F(x,y) is the joint CDF of X and Y, and G and H are marginal CDFs.
+  - Hoeffding's D is robust against a wide variety of alternatives to independence, such as non-monotonic relationships.
+  - The larger the value of D, the more dependent are X and Y (for many types of dependencies).
+
+
+# ------------------------------------------------------------------------------
+# Graphic Assessment of Proportional Odds Assumption
+# ------------------------------------------------------------------------------
+- Plot conditional X means or expected valuye E(X|Y) of a given predictor, X, at each level of the ordered response Y.
+  - For comparison, one can also plot hte estimated conditional means E-hat(X|Y= j) under the fitted PO model X as the only predictor.
+  - If the PO assumption holds for this X, the model-mean curve should be close to the data mean curve.
+
+
+# ------------------------------------------------------------------------------
+# Goodness of Fit
+# ------------------------------------------------------------------------------
+
+- Hosmer-Lemeshow test
+  - The best-known GOF test for explanatory variable patterns with continuous variables.
+  - The test assesses whether or not the observed event rates match expected event rates in subgroups of the model population.
+  - The test specifically identifies subgroups as the deciles of fitted risk values.
+    (Models for which expected and observed event rates in subgroups are similar called well calibrated.)
+  - The idea is to aggregate similar observations into groups that have large enough samples so that a Pearson statistic computed on the observed and predicted counts from the groups has approximately a chi-sqaure distribution.
+
+  - ResourceSelection::hoslem.test()
+
+- Squared Pearson Correlation Coefficient of observed outcome with the estimated probability
+
+
+# ------------------------------------------------------------------------------
+# DIAGNOSTICS:
+# residuals
+# ------------------------------------------------------------------------------
+
+- Standardized residuals and studentized residuals often more useful than raw residuals since they rescale the residuals to have unit variance.
+
+- Standardized Residuals
+  - Uses an overall estimate, sigma-hat^2, of error variance
+
+  - rstandard()
+
+
+- Studentized Residuals
+  - Uses the leave-one-out estimate, sigma-hat^2 (-i), omitting the ith observation.
+  - Preferred in model diagnostics since it also accounts for the impact of the observation on residual variance.
+
+  - rstudent()
+
+
+# ------------------------------------------------------------------------------
+# Model comparison criteria
+# ------------------------------------------------------------------------------
+
+- Information Criteria
+  - Information Criteria does not require the nesting of models.
+  - Roughly, models whose IC(k) values are within about 2 units of the best are considered to have similar fit to the best model.
+
+- AIC (Akaike's Information Criteria)
+  - AIC has "efficiency" property, which means that, asymptotically, it selects models that minimize the mean squared error of prediction, which accounts for both the error in estimating the coefs and the variability of the data.
+  - AIC tends to choose larger models than BIC and AICc.
+
+- AICc (Corrected AIC) 
+
+- BIC (Bayesian Information Criteria)
+  - BIC has "consistensy" property, which means that as n increases, it chooses the "right" model with probability approaching 1.
+  - The BIC penalty becomes more severe when n is larts. It is larger than AIC penalty for all n >= 8.
+  - BIC often chooses smaller models than AIC and AICc.
+
+
+# ------------------------------------------------------------------------------
+# Check optimistic level of the model
+# ------------------------------------------------------------------------------
+
+van Houwelingen-Le Cessie heuristic shrinkage estimation
+  - "1 - gamma.hat":  this model will validate on new data about X% worse than on this dataset.
+  - this can be shown to equal = { (n - p - 1) / (n - 1) } * { R^2adjusted / R^2 }
+
+
+# ------------------------------------------------------------------------------
+# Full-model plots
+# Visualize and check baseline (no risk factors) and risk factors impact
+# ------------------------------------------------------------------------------
+
+vcd::binreg_plot()
+  - Designed to plot the predicted response surface for a binary outcome directly from a fitted model object
+  - Display of fitted values for a binary regression model with one numeric predictor, conditioned by zero or many co-factors
+  - by default, binreq_plot() uses the first numeric predictors as the horizontal variable
+
+
+# ------------------------------------------------------------------------------
+# Effect plots
+# Check the ..., controlling for all other explanatory variables
+# ------------------------------------------------------------------------------
+
+- Calculate fitted values (and standard erros) for the model terms involving these variables and all low-order relatives (main effects that are marginal to an interaction),
+  as these variables are allowed to vary over their range.
+- Shows akk effects of the focal predictors and their low-order relatives, but with all other variables controlled (or "adjusted for")
+
+effects::Effect()
+  - takes a character vector of the names of a subset of focal predictors and constructs the score matrix X by varying these over their ranges,
+    while holding all other predictors constant at "typical" values.
+
+effects::allEffects()
+  - takes a model object, and calculates the effects for each high-order term in the model (including their low-order) relatives
+  - also calculate partial residuals, by specifying "partial.residuals = TRUE"
+
+
+# ------------------------------------------------------------------------------
+# DIGNOSTICS:
+# Component-plus-residual plots (partial residual plot)
+# ------------------------------------------------------------------------------
+
+- Show a nonlinear relation, requiring transformation
+- The essential idea is to move the linear term for x back into the residual, by calculating the partial residuals:  r(j) = r + beta(j) * x(j)
+- If x affects the binary response linearly, the plot should be approximately linear with a slope approximately equal to beta.
+- A nonlinear plot suggests that x(j) needs to be transformed, and the shape of the relation gives a rough guide to the required transformation
+
+
+- car::crPlots():
+  - NOT AVAILABLE for model with interactions
+  the dashed red line:  the slope of age in the model
+  the smoothed green curve:  loess fit with span = 0.5
+
+
+# ------------------------------------------------------------------------------
+# DIGNOSTICS:
+# leverage (hatvalue)
+# ------------------------------------------------------------------------------
+
+- Leverage measures the potential impact of an individual case on the results, which is directly proportional to how far an individual case is from the centroid in the space of the predictors.
+  - NOTE: In OLS, the values depend only on the Xs, where as in logistic regression, they also depend on the dependent variable values and the fitted probabilities. As a result, an observation may be extremely unusual on the predictors, yet not have a large hat value, if the fitted probability is near 0 or 1.
+
+- Leverage = hatvalue / ( 1 - hatvalue )
+
+- Rule of Thubms:
+  2 * k / n < hatvalue:  considered to have moderately high leverage
+  3 * k / n < hatvalue:  considered to have high leverage
+  k:  models number coefs including intercept
+  (average hatvalue = k / n)
+
+- stats::hatvalues()
+
+
+# ------------------------------------------------------------------------------
+# DIGNOSTICS:
+# Influence (Leave-one-out measure of influence)
+# ------------------------------------------------------------------------------
+
+- Cook's Distance
+  - measures average squared distance between beta for all the data and beta(-i) estimated without observation i.
+  - function of standardized Pearson residual and hatvalue
+  - nearly = DFFITS ^ 2 / k
+    k:  models number coefs
+
+  - Rule of Thumbs:
+    4 / n < Cook's Distance:  considered to have moderately high influence on the regression parameter estimates
+    1 < Cook's Distance:  considered to have high influece
+
+  - plot(, which = 4)
+
+
+- Delta of Pearson Goodness-of-fit statistic Chi^2  (Leave-one-out measures of influence on the overall model fit)
+  - The change in the Pearson Chi^2 caused by the deletion of ith observation
+  - approximated by standardized Pearson residual
+
+  - Rule of Thumbs:
+    4 < Delta Chi^2:  considered to have moderate influence on Chi^2 statistic
+    9 < Delta Chi^2:  considered to have high influence on Chi^2 statistic
+
+
+- Delta of residual deviance statistic (Leave-one-out measures of influence on the overall model fit)
+  - The change in the residual deviance caused by the deletion of ith observation
+  - function of (raw) Pearson residual, hatvalue and standardized Pearson residual
+
+  - Rule of Thumbs:
+    4 < Delta residual deviance:  considered to have moderate influence on the residual deviance statistic
+    9 < Delta residual deviance:  considered to have high influence on the residual deviance statistic
+
+
+- DFBETA by intercept and each predictors
+  - standardized change in the coeffs for each variable due to omitting that observation
+
+
+- DFFITS
+  - standardized measure of the difference between the predicted value using all the data and the predicted value calculated omitting the ith observation
+  - function of standardized Pearson residual and hatvalue
+
+  - Rule of Thumbs:
+    2 * ( k / n - k )^0.5 < DFFITS:  considered to have moderate influence
+    3 * ( k / n - k )^0.5 < DFFITS:  considered to have high influence
+
+
+- stats::influence.measure()
+  - DFBETA, DFFITS, cov.r, Cook's Distance, Hatvalue
+
+
+- car::influencePlot()
+  - Studentized Residual, Hatvalue, and Cook's Distance
+  - showing Cook's D as the size of the bubble symbol
+
+
+- car::influencePlot()
+  - Studentized Residual, Hatvalue, and Cook's Distance
+  - showing Cook's D as the size of the bubble symbol
+
+
+- car::scatterplotMatrix():  joint effect of observations on pairs of coeffs
+  - extremely peaked ? yet the pairwise plots show considerable structure ?
+
+
+# ------------------------------------------------------------------------------
+# DIGNOSTICS:
+# Added-Variable Plots (partial regression plots)  --  Not Leave-one-out influence measure, but conditional relationship
+# ------------------------------------------------------------------------------
+
+- Added-variable plots show the conditional relationship between the response and the predictor, controlling for, or adjusting for, all other predictors
+- Influence measures such as Cook's Distance and DFFITS are based on the idea of ingle-case deletion, comparing coeffs or fitted values for the full data with those that result from deleting each case in turn.
+  Yet it is well-known that sets of two (or more) observations can have joint influence, which greatly exceeds their individual influential.
+  Similarly, the influence of one discrepant point can be offset by another influential point in an opposite direction, a phenomenon called masking.
+  Added-variable plots can make such cases visually apparent.
+- Added-variable plots for another regressor, z, show whether the evidence for including z is spread throughout the sample or confined to a small subset of observations.
+  (the regressor z may be a new explanatory variable, or a highe-order term for variable(s) already in the model)
+
+- car::avPlots()
+
+
+
+# ------------------------------------------------------------------------------
+# Study Uncertainty of the model by bootstrapping
+# ------------------------------------------------------------------------------
+
+rms::validate():  check the optimism and corrected model performance
+
+
+# ------------------------------------------------------------------------------
+# Nomogram
+# ------------------------------------------------------------------------------
+
+rms::nomogram()
+  - For each predictor, read the points assigned on the 0-100 scale and add these points.
+  - Read the result on the Total Points scale and the read the corresponding predictors below it.
+
+
+
+# ------------------------------------------------------------------------------
+# Overdispersion in poisson regression
+# ------------------------------------------------------------------------------
+
+- Overdispersion
+  - the variance is larger thant the mean
+  - If there is overdispersion, D/phi is Chi^2 distributed with n - p degrees of freedom
+  - Estimate of phi(overdispersion parameter) = Residual Deviance - Residual DF = D / (n - p)
+  - Estimate of phi by R's glm(, family=quasipoisson) = sum(residuals(mod, type = "pearson")^2)/df.residual(fm) 
+
+
+- Causes of overdispersion
+  - Apparent overdispersion is due to:
+    - missing covariates or interactions
+    - outliers in the response variable
+    - non-linear effects of covariates entered as linear terms in the systematic part of the model
+    - choice of the wrong link function
+
+  - Real overdispersion is due to:
+    - the variation in the data really is larger thatn the mean
+    - many zeros
+    - clustering of observations
+    - corelation between observations
+
+- Poisson GLM with overdispersion
+  - is that we no longer explicitly specify a Poisson distribution, but only a relationship between the mean and variance of Y
+  - the standard error of the parameters are multipled with the sqrt(phi)
+
+- Rule of Thumbs
+  - phi >= 1.5:  some action needs to be taken to correct it.
+  - phi >= 15 or 20:  need to consider other methods (e.g. the negative binomial GLM or zero-inflated models)
+
+  
+# ------------------------------------------------------------------------------
+# Too many zeros in poisson regression
+# ------------------------------------------------------------------------------
+
+- Sources of zeros, in the context of bird abundances in forest patches
+  - structural error (positive zeros, true zeros)
+    - a bird is not present because the habitat is not suitable
+
+  - false zeros (false negatives)
+    - design error:  due to poor experimental design or sampling practices
+      - highly likely that all samples will be zero as it is the wrong season
+      - sampling for too short a time period or sampling too small an area
+
+    - observer error
+      - some bird species look similar, or difficult to detect
+
+    - "bird" error
+      - habitat is suitable, but the site is not used
+
+    - naughty naughts (bad zeros)
+      - sampling outside the habitat range (such as sampling for elephants in the sea)
+
+
+# ------------------------------------------------------------------------------
+# Variance Inflation Factor
+# ------------------------------------------------------------------------------
+
+- VIF will become large when R^2(xj) is near 1, indicating that x(j) has very little unique variation when the other independent variables in the model are considered.
+  If the other p - 1 regressors can explain a high proportion of x(j), then x(j) does not add much to the model above and beyond the othre p - 1 regression.
+  Collinearity in turn leads to high sampling variation in coefficient b(j), resulting in large standard errors and unstable parameter estimates.
+
+- Rules of Thumbs
+  - may consider collinearity a problem if VIF > 5 or 10
+
+
+
+# ------------------------------------------------------------------------------
+# 計量経済学におけるモデル
+# ------------------------------------------------------------------------------
+
+- 多項式ラグ・モデル（アーモン・ラグ・モデル）
+  - 分布ラグの係数を、低次（通常は二次から四次程度）の多項式で近似
+
+  - 係数に研究者の恣意性を持たせずに推定
+
+　　- パラメータ数の大幅な節約ができ、自由度の不足や多重共線性が多少なりとも改善される
+
+　　- 長いラグが必要とされるケースで検討：　輸入・消費行動のように習慣形成がある、石油や一次産品など長期契約に基づく取引が影響するなど
+
+
+
+- ラグ付き内生変数を含むモデル
+
+  - 幾何級数型の分布ラグ・モデルは、ラグ付き内生変数を含むモデルとして表せる
+　　　　※適応型期待形成に基づく期待変数を説明変数とするモデルは、幾何級数型の分布ラグ・モデルを導く
+
+  - 幾何級数型モデルを、ラグ付き内生変数を含むモデルとして表すと、撹乱項が一期前の撹乱項を含む移動平均型になるため、最小二乗法推定量は不偏推定量でも一致推定量でもない
+
+  - 実証研究では、部分調整モデル（※）を想定し、撹乱項が系列相関を持たないと仮定することが多い
+　　部分調整モデルでは、最小二乗法推定量は、不偏推定量ではないが一致推定量となる　（説明変数と撹乱項の相関がゼロの場合は最小二乗法推定量は不偏性は持たないが一致性は持つ）
+　　　　※最適な量と一期前の差の一部分しか今期には調整できない、瞬時の調整ができず目標に向かい徐々に調整が行われるとする　⇒　　部分調整モデルでは、撹乱項が無限の過去を含むことになる
+
+  - 撹乱項に系列相関を持つモデル（下記のAR(1)など）は、部分調整型のラグ付き内生変数を含むモデルとして表現できる
+
+　　- 多項式ラグ・モデルにラグ付き内生変数を加えることで、より複雑なラグ構造を推定することも可能
+
+
+
+- ラグ付き内生変数を含むモデルの撹乱項に系列相関がある場合
+
+　 - ラグ付き内生変数を含むモデルでの撹乱項の系列相関は、ダービンのh統計量 あるいは ダービンの代替的方法　で検定
+　    - ダービンのh統計量は、分母が負値になると計算不可となってしまう
+　    - 代替的方法は、撹乱項が高次のラグ構造を持つモデルの検定に拡張できる
+
+　 - このモデルの撹乱項に系列相関があるということは、内生変数と撹乱項が、一期前の撹乱項を含むことになり、説明変数と撹乱項に相関があることになる
+
+  - ラグ付き内生変数を含めても系列相関が残る場合は、操作変数法で推定する　（不偏推定量ではないが一致推定量が得られる）
+　　あるいは、撹乱項に正規分布を仮定して最尤法により推定する　（ただし非線型推定の手法が必要）
+
+  - 操作変数法での推定方法：
+　　最初に操作変数法でモデルを推定し、その残差より系列相関係数（rho）の一致推定量を求めて、
+　　コクラン＝オーカット流の繰り返しを利用し収束するまで計算する
+　　操作変数法の候補は、内生変数以外のラグ付き変数のみ
+　　（内生変数のラグ付き変数はいくらラグをとっても撹乱項との相関が消えないので注意）
+
+
+
+- 操作変数法
+
+　 - 説明変数と撹乱項に相関がある場合でも、一致推定量が求められる
+
+　 - 最小二乗推定をした理論値を操作変数として用いる時は、操作変数法はその理論値を用いた最小二乗法となる
+
+  - 操作変数法を用いた場合の、ダービン＝ワトソン検定統計量は、厳密な意味ではもはや残差の系列相関の正しい検定統計量ではないが、近似的には系列相関の情報を与えるものとして使うことができる
+　　系列相関が確認された場合は、操作変数法とコクラン＝オーカット流の修正の併用が必要となる
+
+
+
+- 撹乱項目に系列相関あるケース
+
+　 - 慣性：　GNP、消費、消費者物価などの経済変数は、持続的または循環的な動きをする傾向にある
+
+　 - 振動と収斂：　消費行動などマイナスの自己相関　(大きな出費のあとは大幅減、反動で大きな出費など）
+
+　 - 想定の誤り：　説明変数を誤って除外した場合、除外された変数に自己相関があれば、想定されたモデルの撹乱項はあたかも系列相関があるような動きを示す
+
+　 - ラグ付き内生変数モデルから内生変数が欠落
+
+　 - 関数形の誤り
+
+　 - 移動平均：　移動平均を用いて季節調整後のデータ
+
+
+
+- 説明変数と撹乱項の間に系列相関のあるケース　（最小二乗法推定量は、不偏性も一致性も持たない）
+
+　 - 同時方程式モデル
+
+　 - 説明変数に観測誤差がある場合
+
+　 - 合理的期待仮設に従って形成されている将来についての期待値を説明変数としてもつモデルにおいて、期待値の代わりに将来の実績値を用いた場合
+
+　 - ラグ付き内生変数を含むモデルの撹乱項に系列相関がある場合
+　    - 内生変数と撹乱項が一期前の撹乱項を含むことになり、説明変数と撹乱項に相関があることになる
+
+
+
+- 多重回帰の撹乱項が一階の自己回帰モデルに従う場合（AR(1)）
+
+  - 経験的にこのモデルで多くの経済データの系列相関を記述できることが知られており、計量モデルの撹乱項に系列相関の可能性を検討する場合、95%がこのAR(1)モデル
+
+  - 経済モデルにおいては、（負よりも）正の系列相関を想定する場合が多い
+
+　　- 撹乱項の系列相関は、ダービン＝ワトソン統計量で検定し、
+　　系列相関がなければ最小二乗法推定量を用い、あればコクラン＝オーカットの方法で推定する
+　　コクラン＝オーカットの方法による推定量は、不偏推定量ではないが一致推定量
+
+　　- あるいは、系列相関係数そのものをモデルに織り込み、非線型推定法（※）で推定することも可能
+　　（※）この場合、ラグ付き内生変数モデルとなるが、係数が元のモデルの係数と系列相関係数の積となりパラメータが非線型となる
+
+  - 実際によく用いられるモデルは、単にラグ付き内生変数を加え、系列相関を除去したモデルで推定を試みることが多い
+　　例えば、輸入関数の推定で、被説明変数を「実質輸入等」に対し、説明変数を「実質GNP」「相対価格＝輸入デフレーター÷卸売物価指数」などとしていたところ、
+　　説明変数に「前期の実質輸入等」を加えることで、系列相関を除去する
+
+
+- 定常過程
+
+　　- 期待値と自己共分散が時間を通じて一定
+
+　　- 特徴：　トレンドがなく、平均回帰性を有す
+
+　　- 例：
+　　　　　- 株式収益率
+
+
+- 単位根過程
+
+　　- 原系列が非定常過程であり、差分系列が定常過程である過程
+
+　　- 
+
+　　- 例：
+　　　　　-　ARIMA(p,d,q)過程：　差分系列が定常かつ反転可能なARMA(p,q)過程
+　　　　　- ランダムウォーク
+　　　　　- 株価
+
+
+
+- 見せかけの回帰
+
+　　- 無関係の単位根過程の間にあたかも有意な関係があり、回帰の説明力が高いように見える現象
+
+　　- 説明変数と被説明変数が単位根過程であり、回帰の誤差項が単位根の場合、説明変数と被説明変数の関係は、見せかけの回帰になる
+
+　　- 回避の方法
+　　　  - 説明変数と被説明変数の（少なくともどちらか一方の）ラグ変数を回帰に含める
+　　　  - 単位根過程に従う変数の差分をとり、定常過程にしてから解析する
+
+
+
+- 共和分
+
+　　- 単位根過程を用いて変数間の均衡関係を記述する方法
+
+　　- 共和分の関係がある場合
+　　  - 単位根過程の線形和が定常過程になるとき、単位根過程の間には共和分の関係がある
+　　  - 説明変数と被説明変数が単位根過程であり、回帰の誤差項が定常過程の場合、説明変数と被説明変数の関係は、共和分の関係となる
+
+
+
+
+

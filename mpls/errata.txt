@@ -1,0 +1,148 @@
+#####################################################################################################
+## This file documents errors and additions.
+#####################################################################################################
+
+## For a recent analysis of the larger MPLS data set used in the book, see
+## Cutuli JJ, Desjardins CD, Herbers JE, Long JD, Heistad D, Chan C-K, Hinz E, Masten AS (2013). 
+## Academic achievement trajectories of homeless and highly mobile students: resilience in the context of chronic and acute risk. 
+## Child Development, 84, 841-857.
+
+## For an example of how the difference in AIC can be used as an effect size, see
+## Paulsen JS, Smith MM, Long JD (2013). Cognitive decline in prodromal Huntington Disease: 
+## Implications for clinical trials. Journal of Neurology, Neurosurgery, & Psychiatry, 84, 1233-1239.
+
+#####################################################################################################
+
+## The MPLS dataset shown on p.31 Table 1.6 is used for Chapters 1-5. 
+## This is the "MPLS Dataset" on the "Chapter 1: Introduction" tab of the website.
+
+## Chapters 6-11 use a slightly different dataset, which is not noted in the book.
+## This dataset is "MPLS Dataset (altered)" available in the tabs for Chapters 6-11 on the website.
+
+## Chapter 13 Section 13.2: the math.txt needs to be downloaded from the Chapter 13 folder of the
+##  website. This is not the Section 3.9.1 data as indicated on p. 500.
+
+#####################################################################################################
+
+## Omnibus statement regarding the lmer() function in the lme4 package (beginning in Chapter 5).
+##
+## New versions of the lme4 software (e.g., version 1.1-7) have checks that appear to be austere and
+## can suppress the estimation of sensible models. It is recommended that the user add the following
+## line to all lmer() statements in the book: 
+##
+## control = lmerControl(check.nobs.vs.nRE = "warning")
+##
+## E.g., on p. 171 of Chapter 5, the new code would be the following:
+##
+## lmer.1 <- lmer(read ~ 1 + grade + (1 + grade | subid), data = MPLS.LS, REML = FALSE,
+##                control = lmerControl(check.nobs.vs.nRE = "warning")                  
+
+#####################################################################################################
+
+## The lmer() extractor functions have changed a bit in newer versions of lme4. To get the 
+## variance-covariance matrix of the random effects in variance form (not just correlations), you 
+## have to add the ID variable, e.g.: VarCorr(modelA)$subject rather than VarCorr(modelA).
+## Extracting the level-1 residual variance is also different.  The function getME() can be used
+## to extract general components from a lmer() object. Before: summary(modelA)$sigma^2. Now: 
+## getME(modelA, "sigma")^2. Thanks to Keith Burt. 
+
+## Additional issues identified by Keith Burt (thanks!).
+## Chapter 4 ----- change all opts() to theme(); there are also a couple of other theme-ing issues; 
+##  e.g. theme_rect() is now element_rect()
+## Chapter 7 ----- update "summary(model.1)@coefs" to "coef(summary(model.1))"
+##  update ggplot code with theme() for opts() and element.blank() for theme.blank()
+## Chapter 9 ------ summary()@coefs as for Ch. 7
+## Chapter 10 ----- add $subid to VarCorr() in some places.  
+## Chapter 11 ----- theme for opts in ggplot; update summary()@AICtab to be summary()$AICtab
+## Chapter 12 ----- summary()@coefs as for Ch. 7; changing @REmat to VarCorr(x)$subid 
+##   (output doesn't mimic exactly what is in the text, but is close)
+
+#####################################################################################################
+
+## Chapter 2: "RSiteSearch" is no longer available. 
+
+## Chapter3, p. 73 Section 3.3.1. the mean() and sd() syntax should be replaced with the following.
+sapply(MPLS[ ,2:5], mean, na.rm = TRUE)
+sapply(MPLS[ ,2:5], sd, na.rm = TRUE)
+
+## Chapter 3, alternative code to reproduce the tables on p. 75 and 76 (thanks to Deon De Bruin).
+myrisk <- ddply(.data = MPLS, .variables = .(Risk = MPLS$risk), function(x) c(read.5 = mean(x$read.5, na.rm = TRUE), 
+		read.6 = mean(x$read.6, na.rm = TRUE), read.7 = mean(x$read.7, na.rm = TRUE), 
+                read.8 = mean(x$read.8, na.rm = TRUE)))
+
+## Chapter 3, alternative code to produce the table on p. 82.
+ddply(.data = MPLS.LS, .variables = .(grade), .fun = summarize, read.mean = mean(read, na.rm = TRUE))
+
+## Chapter 3, alternative code to reproduce the table on p. 82
+MPLS.LS$missing <- is.na(MPLS.LS$read)
+ddply(.data = MPLS.LS, .variables = .(grade), .fun = summarize, prop.miss = mean(missing))
+
+## Chapter 3, alternative code for tables on p. 82 and 83 
+mgrge <- ddply(.data = MPLS.LS, .variables = .(grade, gen), .fun = summarize, read.mean = mean(read, na.rm = TRUE))
+mgrge
+mgrat <- ddply(.data = MPLS.LS, .variables = .(grade = MPLS.LS $grade, att.range = cut_number(MPLS.LS$att, n = 2)),
+               .fun = summarize, read.mean = mean(read, na.rm = TRUE))
+mgrat
+mgrat$att.range <- factor(mgrat$att.range, labels = c("Low", "High"))
+mgrat
+
+## Chapter 3, alternative code to produce the table on p. 84
+ddply(.data = MPLS.LS, .variables = .(grade, gen), .fun = summarize, prop.miss = mean(missing))
+
+## Chapter 3, alternative code for reproducing the table on p. 95
+unwt <- ddply(.data = MCAR, .variables = .(risk2), .fun = summarize, Mean = mean(read.7m, na.rm = TRUE))
+unwt <- mean(unwt$Mean)
+myresults1 <- data.frame(complete = mean(MCAR$read.7), wt.mean = wt, unwt.mean = unwt)
+rownames(myresults1) <- "MCAR"
+round(myresults1, 1)
+
+## Chapter 3, alternative code for reproducing the table on p. 96
+unwt <- ddply(.data = MAR, .variables = .(risk2), .fun = summarize, Mean = mean(read.7m, na.rm = TRUE))
+unwt <- mean(unwt$Mean)
+myresults2 <- data.frame(complete = mean(MAR$read.7), wt.mean = wt, unwt.mean = unwt)
+rownames(myresults2) <- "MAR"
+round(myresults2, 1)
+
+## Chapter 3, alternative code for reproducing the tables on p. 97
+unwt <- ddply(.data = NMAR, .variables = .(risk2), .fun = summarize, Mean = mean(read.7m, na.rm = TRUE))
+unwt <- mean(unwt$Mean)
+myresults3 <- data.frame(complete = mean(NMAR$read.7), wt.mean = wt, unwt.mean = unwt)
+rownames(myresults3) <- "NMAR"
+round(myresults3, 1)
+round(rbind(myresults1, myresults2, myresults3), 1)
+
+## p. 105 Chapter 4 and remaining chapters. The latest version of ggplot2 (0.9.0) requires the plyr 
+##  package to be loaded manually.
+require(ggplot2); require(plyr)
+
+## p. 123 Chapter 4, use fun.y = "mean" in the stat_summary() functions.
+
+## p. 145 Chapter 4 and remaining chapters. Latest version of ggplot2 replaces opts() with theme(), 
+## replaces theme_text() with element_text(), and theme_rect() with element_rect(), etc. For example:
+theme(legend.title = element_text(size = 4, colour = "grey80")) 
+
+## p. 206 Section 6.2.2, the last line of third paragraph should read "... 17.6724/5.4013 = 3.2719."
+
+## Chapter 9 Section 9.6.5, syntax of the kml package has changed in the new version (2.0). as.cld()
+## is replaced by cld(). 
+mycld <- cld(read.wide)
+
+## Chapter 10, p. 364 introduces the user-defined Vstar.func(), which should be replaced by 
+## the internal function cov2cor() from the stats package that comes with R (thanks to Keith Burt). 
+
+## Chapter 10, p. 365, the first line of code in V.func() should be replaced with the following:
+dim(VarCorr(z)$subid)[1] ## Grab the number of random effects variance components
+
+## Chapter 10, p.377 consider replacing attr(VarCorr(lmer.1), "sc") with the following:
+summary(lmer.1)@sigma
+
+## p. 398 Section 10.6.1, p. 446 Section 12.1, p. 493 Section 13.1: 
+## To use viewport(), grid.newpage() etc., the grid package must be installed and loaded.
+require(grid)
+
+## p. 480 Section 12.7.1 second paragraph should read "... the slope over the interval (2,6)..."
+
+
+
+
+
